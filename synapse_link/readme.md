@@ -3,7 +3,7 @@
 ## Overview
 This notebook performs incremental merges of CSV files from a Synapse Link feed in a Data Lakehouse environment using Microsoft Fabric and PySpark. The process handles schema evolution, manages parallel merges, and ensures only the latest records are kept.
 
-- The notebook is fully self-contained and needs no external configuration.
+- The notebook is fully self-contained and needs only the configuration provided by the parameters.
 - It can be executed by a Fabric Pipeline or scheduled directly, although the Pipeline option might be better to avoid stacking multiple notebook executions.
 - The notebook will process change folders chronologically until it reaches the current folder.
 - It will track the last folder processed by placing a watermark file specified via the "incremental_merge_folder" parameter. The watermark file contains a text string equal to the last processed folder name.
@@ -12,6 +12,9 @@ This notebook performs incremental merges of CSV files from a Synapse Link feed 
 - The notebook uses soft-deletes, which means that records marked as deleted by Synapse Link will be marked as deleted in the Fabric table via the column IsDelete = 1.
 - If an error occurs for a given folder the script will abort and retry the folder the next time the notebook is run
 - Log messages are outputted to console and <incremental_merge_folder>/logs
+
+##Lakehouse setup
+In order for the notebook to work, the Fabric Lakehouse containing the synapse link files shortcut should be added and pinned as the default Lakehouse of the notebook.
 
 <br>
 
