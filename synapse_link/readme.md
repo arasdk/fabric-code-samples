@@ -17,6 +17,8 @@ This notebook performs incremental merges of CSV files written by the Synapse Li
 - If an error occurs for a given folder the script will abort and retry the folder the next time the notebook is run
 - Log messages are outputted to console and <incremental_merge_folder>/logs
 
+*Disclaimer*: The Fabric notebook provided in this repository is for demonstration purposes only. Before deploying it in your environment, it is highly recommended to thoroughly verify and enhance the notebook to ensure it meets your specific requirements for correctness, resiliency, and performance for your intended workload.
+
 <br>
 
 ### Notebook Parameters
