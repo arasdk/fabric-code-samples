@@ -13,7 +13,7 @@ This notebook performs incremental merges of CSV files from a Synapse Link feed 
 - If an error occurs for a given folder the script will abort and retry the folder the next time the notebook is run
 - Log messages are outputted to console and <incremental_merge_folder>/logs
 
-##Lakehouse setup
+## Lakehouse setup
 In order for the notebook to work, the Fabric Lakehouse containing the synapse link files shortcut should be added and pinned as the default Lakehouse of the notebook.
 
 <br>
