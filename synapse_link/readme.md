@@ -1,4 +1,4 @@
-# synapse_link_adls_incremental_merge
+# Loading Dynamics 365 Data into a Fabric Lakehouse Using Synapse Link
 <br>
 
 ![Synapse Link drawio](https://github.com/arasdk/fabric-code-samples/assets/145650154/f8407e69-73a5-4a6e-867f-623a4f556d23)
