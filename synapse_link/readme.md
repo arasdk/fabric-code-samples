@@ -19,7 +19,7 @@ This notebook performs incremental merges of CSV files written by the Synapse Li
 
 <br>
 
-**Disclaimer**: The Fabric notebook is for demonstration purposes only. Before deploying it in your environment, it is highly recommended to thoroughly verify and enhance the notebook to ensure it meets your specific requirements for correctness, resiliency and performance to match your intended workload.
+**Disclaimer**: The Fabric notebook presented here is intended for demonstration purposes. Before deploying it in your environment(s), it is recommended to thoroughly verify and further refine the code to ensure it meets your requirements for correctness, resiliency, performance etc.
 
 <br>
 
