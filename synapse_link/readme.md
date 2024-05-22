@@ -5,17 +5,20 @@
 
 
 ## Overview
-This notebook performs incremental merges of CSV files written by the Synapse Link trickle-feed to an ADLS storage account using Microsoft Fabric and PySpark. The process handles schema evolution, supports parallel merges, and ensures only the latest records are kept.
+The Fabric notebook performs incremental merges of CSV files written by the Synapse Link trickle-feed to an ADLS storage account. It handles schema evolution, supports parallel merges, and ensures that only the latest records are kept.
 
-- The notebook is fully self-contained and needs only the configuration provided by the parameters.
-- It can be executed by a Fabric Pipeline or scheduled directly, although the Pipeline option might be better to avoid stacking multiple notebook executions.
-- The notebook will process change folders chronologically until it reaches the current folder.
-- It will track the last folder processed by placing a watermark file specified via the "incremental_merge_folder" parameter. The watermark file contains a text string equal to the last processed folder name.
-- It can run on any spark starter pool in Fabric and doesn't need external libraries installed.
-- It will automatically detect which tables to import as long as the synapse link shortcut is pointing at the root of the ADLS storage account container created by Synapse Link.
-- The notebook uses soft-deletes, which means that records marked as deleted by Synapse Link will be marked as deleted in the Fabric table via the column IsDelete = 1.
-- If an error occurs for a given folder the script will abort and retry the folder the next time the notebook is run
-- Log messages are outputted to console and <incremental_merge_folder>/logs
+Key features of the notebook include:
+
+- **Self-Contained**: The notebook requires only the configuration provided by the notebook parameters.
+- **Execution Options**: It can be executed by a Fabric Pipeline or scheduled directly. Using a Pipeline is recommended, because pipelines can be configured to prevent overlapping notebook executions
+- **Chronological Processing**: The notebook processes change folders in chronological order until it reaches the current folder.
+- **Watermark Tracking**: It tracks the last processed folder by placing a watermark file, specified via the "incremental_merge_folder" parameter. This file contains the name of the last processed folder.
+- **Compatibility**: It can run on any Spark starter pool in Fabric without needing external libraries.
+- **Automatic Table Detection**: The notebook automatically detects which tables to import, as long as the Synapse Link shortcut points to the root of the ADLS storage account container created by Synapse Link.
+- **Soft Deletes**: Records marked as deleted by Synapse Link will be marked as deleted in the Fabric table via the column IsDelete = 1.
+- **Error Handling**: If an error occurs for a given folder, the script will abort and retry processing that folder the next time the notebook is run.
+- **Logging**: Log messages are outputted to the console and to <incremental_merge_folder>/logs.
+
 
 <br>
 
