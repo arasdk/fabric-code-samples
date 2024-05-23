@@ -26,6 +26,14 @@ Key features of the notebook include:
 
 <br>
 
+**Known Issues and Limitations**
+- SinkCreatedOn and SinkModifiedOn are imported as NULL values. The date format in CSV used for these two columns is for some reason not the same as for other date fields.
+- Text fields ending with CRLF are imported with a whitespace+LF
+- No partitioning is applied on the Fabric tables, which means no partition pruning is performed during merge operation. Partition info is available in model.json, but it is not cconsistent with the documentation.
+- Hard-deletes are not supported currently and should be performed by a seperate maintenance job if required
+<br>
+
+
 ### Notebook Parameters
 - **lakehouse_name**: The name of the lakehouse where the Synapse Link incremental feed is available as a shortcut.
 - **incremental_merge_folder**: The folder in the lakehouse used for logs and watermarks.
