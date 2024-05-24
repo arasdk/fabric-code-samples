@@ -29,10 +29,11 @@ Key features of the notebook include:
 **Known Issues and Limitations**
 <br>
 See [issues](https://github.com/arasdk/fabric-code-samples/issues) for an up to date list.
+
 <br>
 
-
 ### Notebook Parameters
+The notebook can be parameterized to support execution via Fabric pipelines. This is the recommended approach as the scheduling options on a notebook in Fabric doesn't protect against overlapping executions.
 - **lakehouse_name**: The name of the lakehouse where the Synapse Link incremental feed is available as a shortcut.
 - **incremental_merge_folder**: The folder in the lakehouse used for logs and watermarks.  (the folder specified will be automatically created if missing)
 - **synapse_link_shortcut_path**: The path to the shortcut pointing to the ADLS storage account folder containing the incremental CSV files from Synapse Link.
