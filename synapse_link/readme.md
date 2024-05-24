@@ -61,7 +61,12 @@ spark.conf.set("spark.ms.autotune.enabled", "true")
 <br>
 
 ## Prerequisites
-The following prerequisites are required to run the script.
+Before the merge script can start loading data into managed tables in a Fabric Lakehouse, some prerequisites are needed to set up this solution: 
+
+- The Dynamics 365 Finance and Operations environment is updated to a version that supports Synapse Link.
+- A Storage Account to use with ADLS (Azure Data Lake Storage) gen2 needs to be provisioned in an Azure Subscription.
+- A Synapse Link profile must be configured to write incremental files to the ADLS storage account.
+- Configure a Fabric Lakehouse, import the notebook and create a shortcut to the data lake under the Files section of the Lakehouse.
 
 <br>
 
