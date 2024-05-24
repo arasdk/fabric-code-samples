@@ -65,14 +65,21 @@ The following prerequisites are required to run the script.
 <br>
 
 ### Dynamics 365 Finance and Operations
-Microsoft lists the supported versions of D365FO as part of their Synapse Link documentation.
-https://learn.microsoft.com/en-us/power-apps/maker/data-platform/azure-synapse-link-select-fno-data
+Microsoft lists the [supported versions](https://learn.microsoft.com/en-us/power-apps/maker/data-platform/azure-synapse-link-select-fno-data) as part of their Synapse Link documentation, so make sure you check for compatibility with your ERP operations team.
+
+![image](https://github.com/arasdk/fabric-code-samples/assets/145650154/d46c6744-0456-4dc7-9a41-2df017dba921)
+
+The Finance and Operations environment must be [linked](https://learn.microsoft.com/en-us/dynamics365/fin-ops-core/dev-itpro/power-platform/enable-power-platform-integration#enable-during-deploy) with the Power Platform to enable access for Synapse Link.
 
 <br>
 
 ### ADLS Gen 2 Storage Account
-Microsoft has written a nice little guide on how to setup a data lake for Synapse Link, which you can find here: 
-[Create an Azure Synapse Link for Dataverse with Azure Data Lake](https://learn.microsoft.com/en-us/power-apps/maker/data-platform/azure-synapse-link-data-lake).
+Incremental files must be written to an [ADLS Gen2 storage account](https://learn.microsoft.com/en-us/power-apps/maker/data-platform/azure-synapse-link-data-lake). You should have owner and storage blob contributor access to the storage account before continuing with the Synapse Link profile setup. 
+
+![image](https://github.com/arasdk/fabric-code-samples/assets/145650154/439f0216-c017-4c66-a812-8f4dfa977bce)
+
+Additional requirements and guidance for setting up the storage account can be found by following the above link.
+
 
 <br>
 
