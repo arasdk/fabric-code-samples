@@ -22,7 +22,7 @@ Key features of the notebook include:
 
 <br>
 
-**Disclaimer**: The Fabric notebook presented here is intended for demonstration purposes. Before deploying it in your environment(s), it is recommended to thoroughly verify and further refine the code to ensure it meets your requirements for correctness, resiliency, performance etc.
+**Disclaimer**: _The Fabric notebook presented here is intended for demonstration purposes. Before deploying it in your environment(s), it is recommended to thoroughly verify and further refine the code to ensure it meets your requirements for correctness, resiliency, performance etc_.
 
 <br>
 
