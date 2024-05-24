@@ -34,7 +34,7 @@ See [issues](https://github.com/arasdk/fabric-code-samples/issues) for an up to 
 
 ### Notebook Parameters
 - **lakehouse_name**: The name of the lakehouse where the Synapse Link incremental feed is available as a shortcut.
-- **incremental_merge_folder**: The folder in the lakehouse used for logs and watermarks.
+- **incremental_merge_folder**: The folder in the lakehouse used for logs and watermarks.  (the folder specified will be automatically created if missing)
 - **synapse_link_shortcut_path**: The path to the shortcut pointing to the ADLS storage account folder containing the incremental CSV files from Synapse Link.
 - **batch_size**: Defines how many table merges are parallelized. Set this value to 1 to perform a single merge at a time. 
 
@@ -84,18 +84,30 @@ Additional requirements and guidance for setting up the storage account can be f
 <br>
 
 ### Synapse Link Profile Setup
-When [configuring your Synapse Link profile by selecting D365FO tables or entities](https://learn.microsoft.com/en-us/power-apps/maker/data-platform/azure-synapse-link-select-fno-data), you can ignore the options for "Append-only" and "Partition" strategies. Once the profile is saved, "Append-only" will automatically be set to read-only and will have a checkmark next to it. Similarly, "Partition" will be set to "Year."
+Start by checking that the [prerequisites](https://learn.microsoft.com/en-us/power-apps/maker/data-platform/azure-synapse-link-select-fno-data#prerequisites) for Synapse Link are fulfilled. Note: If you are on version 10.0.0.39 (PU63) or later of D365FO then row version change tracking should already be automatically enabled for most of the tables and entities you are likely to use.
+
+**Note**: You need system administrator privileges for the Dataverse environment linked to Dynamics 365 Finance and Operations in order to configure Synapse Link.
+
+Once the prerequisites are completed, sign in to [Power Apps](https://make.powerapps.com/) and open "Azure Synapse Link" - remember to select the correct Dataverse environment.
+From the Synapse Link app, chose "New Link" and enter the details of the storage account that was provisioned earlier. Leave the "Connect to your Azure Synapse Analytics workspace" option unchecked to configure the profile for incremental CSV files.
+
+When [selecting D365FO tables or entities](https://learn.microsoft.com/en-us/power-apps/maker/data-platform/azure-synapse-link-select-fno-data), you can ignore the options for "Append-only" and "Partition" strategies. Once the profile is saved, "Append-only" will automatically be set to read-only and will have a checkmark next to it. Similarly, "Partition" will be set to "Year."
+
+**Note**: You need to select Advanced -> Show advanced configuration settings -> Enable Incremental Update Folder Structure in order to be able to select D365FO tables and entities.
 
 Once the tables an entities has been selected and the profile has been saved, Synapse Link will start the proces of initializing the feed. This can take anywhere from hours to even days until all tables and entities are sync'ed to the data lake.
 
 <br>
 
-### Prepare a Fabric Lakehouse
-When you have created a Fabric Lakehouse to hold your tables from Synapse Link, you need to add a shortcut to the ADLS storage account. 
+### Configure a Microsoft Fabric Lakehouse
+When you have created a Fabric Lakehouse to hold your tables from Synapse Link, you need to add a shortcut to the ADLS storage account.
 
 - Go to the "Files" section of your Lakehouse, right-click and select "New folder". Give the folder the name synapse_link.
-- Next, right-click on the synapse_link folder and select "New shortcut". 
-- From the shortcut wizard navigate to the ADLS storage account and select the container created by Synapse Link for your Dataverse environment. The container should be named dataverse-environment-name-environment uniqe id. Note down the name given to the shortcut as it will be needed later on. 
-- Create a Fabric notebook in the same workspace as the Lakehouse and insert the source code from the git repo script. Important: Make sure the Lakehouse is added to your notebook and configured as the default Lakehouse. You can verify that the Lakehouse is the default Lakehouse when a "pin" icon is displayed next to the Lakehouse with the notebook opened. If this step is omitted the script will not be able to take advantage of the Lakehouse default mount point (i.e. "/lakehouse/default/Files/...") for the "Files" folder when running the spark job.
+- Next, right-click on the synapse_link folder and select "New shortcut".
+- From the shortcut wizard navigate to the ADLS storage account and select the container created by Synapse Link for your Dataverse environment. The container should be named dataverse-environment-name-environment uniqe-id. Note down the name given to the shortcut as it will be needed later on.
+- Create a Fabric notebook in the same workspace as the Lakehouse and insert the source code from synapse_link_adls_incremental_merge.py.
+- Ensure the notebook parameters are configured with the correct values for your Lakehouse.
+
+**Important**: Make sure the Lakehouse is added to your notebook and configured as the default Lakehouse for the notebook. You can verify that the Lakehouse is the default Lakehouse when a "pin" icon is displayed next to the Lakehouse with the notebook opened. If this step is skipped, the script will not be able to take advantage of the Lakehouse default mount point (i.e. "/lakehouse/default/Files/...") for the "Files" folder when running the spark job.
 
 <br>
