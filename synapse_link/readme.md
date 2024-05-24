@@ -27,10 +27,8 @@ Key features of the notebook include:
 <br>
 
 **Known Issues and Limitations**
-- SinkCreatedOn and SinkModifiedOn are imported as NULL values. The date format in CSV used for these two columns is for some reason not the same as for other date fields.
-- Text fields ending with CRLF are imported with a whitespace+LF
-- No partitioning is applied on the Fabric tables, which means no partition pruning is performed during merge operation. Partition info is available in model.json, but it is not cconsistent with the documentation.
-- Hard-deletes are not supported currently and should be performed by a seperate maintenance job if required
+<br>
+See [issues](https://github.com/arasdk/fabric-code-samples/issues) for an up to date list.
 <br>
 
 
