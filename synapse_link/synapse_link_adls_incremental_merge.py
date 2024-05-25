@@ -298,29 +298,25 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=batch_size) as executor:
         table_schema_dict = get_table_schema_dict(folder)
         table_names = [key for key in table_schema_dict.keys()]
 
-        # Process [batch_size] of tables
-        for i in range(0, len(table_names), batch_size):
-            batch = table_names[i : i + batch_size]
+        # Submit merge command(s) to the executor
+        futures = [
+            executor.submit(
+                merge_incremental_table,
+                table_name,
+                folder,
+                table_schema_dict[table_name],
+            )
+            for table_name in table_names
+        ]
 
-            # Submit merge command(s) to the executor
-            futures = [
-                executor.submit(
-                    merge_incremental_table,
-                    table_name,
-                    folder,
-                    table_schema_dict[table_name],
-                )
-                for table_name in batch
-            ]
-
-            # Check the results of the futures
-            try:
-                # This will raise an exception if the callable raised one
-                for future in concurrent.futures.as_completed(futures):
-                    result = future.result()
-            except Exception as e:
-                logger.critical(f"Error on {folder}/{table_name}: %s", e, exc_info=True)
-                raise e
+        # Check the results of the futures
+        try:
+            # This will raise an exception if the callable raised one
+            for future in concurrent.futures.as_completed(futures):
+                result = future.result()
+        except Exception as e:
+            logger.critical(f"Error on {folder}/{table_name}: %s", e, exc_info=True)
+            raise e
 
         # All tables merged for the folder
         # Update last_processed_folder watermark
