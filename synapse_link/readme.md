@@ -60,6 +60,7 @@ spark.conf.set("spark.ms.autotune.enabled", "true")
 
 <br>
 
+
 ## Prerequisites
 Before the merge script can start loading data into managed tables in a Fabric Lakehouse, some prerequisites are needed to set up this solution: 
 
@@ -116,4 +117,63 @@ When you have created a Fabric Lakehouse to hold your tables from Synapse Link, 
 
 **Important**: Make sure the Lakehouse is added to your notebook and configured as the default Lakehouse for the notebook. You can verify that the Lakehouse is the default Lakehouse when a "pin" icon is displayed next to the Lakehouse with the notebook opened. If this step is skipped, the script will not be able to take advantage of the Lakehouse default mount point (i.e. "/lakehouse/default/Files/...") for the "Files" folder when running the spark job.
 
+<br>
+
+
+## Understanding the Incremental Folder Structure and Common Data Model Format
+Once the D365FO tables and entities are selected and the profile is saved, Synapse Link begins the process of initializing the incremental folder structure in the data lake. This starts with a full load of all selected tables and entities. Depending on the size and number of items selected, this process can take anywhere from a few hours to several days.
+Unlike Export to Data Lake, the Synapse Link incremental updates folder structure for D365FO tables does not support in-place updates. Once records are written to a CSV file by Synapse Link, they are never modified. If a record changes, a new entry is appended to the CSV file. To generate an accurate table, you need to process all incremental folders in the order they were created and apply the changes to the Fabric table.
+Note: You can re-export a table from scratch by removing/adding it from the Synapse Link profile.
+
+On the storage account, Synapse Link creates and manages a new storage container exclusively for the incremental update folders structure.
+The basic folder structure is pictured below:
+
+![image](https://github.com/arasdk/fabric-code-samples/assets/145650154/f05db364-5269-4841-9e51-de93933c017c)
+
+### Timestamp folders
+Synapse Link continuously creates timestamp folders based on the timer interval configured for the profile. Changed, added, or deleted records are always appended to the current folder, which bears the latest timestamp.
+At any given time, the name of the current folder is available as a simple text string in the changelog.info file.
+All previously processed folder names are written to Changelog/Synapse.log as a chronologically ordered list of strings. This is advantageous because it saves us from performing an expensive list operation on the storage account.
+The timestamp folders contains a subfolder for each table where records have been appended.
+Each timestamp folder also contains a model.json schema file. For schema evolution, it is practical to store the schema with each batch of files written using that schema. If the schema changes later, the timestamp folders created after the change will accurately reflect the schema applied at the time of writing the records.
+
+### Table Schema & Partitions
+The schema and partition information for exported tables and entities are written to timestamp-folder/model.json file.
+The overall structure looks like this:
+
+![image](https://github.com/arasdk/fabric-code-samples/assets/145650154/07acd510-0d9c-4eb3-bc12-458095ea7408)
+
+Each table or entity is an element in the entities list. For each list element, there are three key items to note:
+- **Name Field**: This contains the table or entity name.
+- **Attributes List**: This contains the schema represented as a list of columns, with each column's data type specified with constraints (where applicable).
+- **Partitions List**: This includes the name and location of the CSV file. This is based on the "createdon" timestamp of the appended record and will default to "1900" when no such date is available for the table or entity in question
+
+#### Attributes
+![image](https://github.com/arasdk/fabric-code-samples/assets/145650154/e08e17a9-3b75-4ddf-bd52-ec2b7f810f25)
+
+The dataType specifier must be mapped to compatible Delta Table data types when generating the schema.
+Columns of note here:
+- **Id**: The id is used to correlate exported records with the records in the target table
+- **SinkCreatedOn**: the datetime when the record was first exported to the data lake by the profile
+- **SinkModifiedOn**: the datetime when the record was most recently appended to the data lake
+- **sysrowversion**: The SQL row version change tracking version at the time the record was appended. This can be used to compare with the destination record row version during merges, to determine whether to apply the change.
+- **IsDelete**: Is set to 1 for deleted records. For Created or updated records the value is NULL. Note: sysrowversion is not updated for deleted records. In fact, most of the columns will be exported to the data lake with NULL value for records that are deleted. Notable exceptions are: Id, SinkCreatedOn, SinkModifiedOn, IsDelete.
+<br> 
+**Note:** SinkCreatedOn and SinkModifiedOn are tied to the specific Synapse Link profile, and will not correlate to other Synapse Link profiles where the table might be included.
+
+#### Partitions
+![image](https://github.com/arasdk/fabric-code-samples/assets/145650154/82ad9fec-4e10-48d1-8bad-fbb06352ad4c)
+
+The partitions list hold an element for each CSV file appended by Synapse Link for the given <timestamp folder>/<table name>/<partition name>.csv
+Since the schema for all tables configured in Synapse Link is exported for every timestamp folder created, some tables will have an empty partitions list. This indicates that no records were written for these tables during the time period covered by the timestamp folder. 
+The partition list is very useful to determine which tables and CSV files to load without having to resort to performing list operations on the data lake. This is especially useful if we are dealing with a large number of tables.
+
+![image](https://github.com/arasdk/fabric-code-samples/assets/145650154/0d1fa984-8fef-4ea5-9136-e7218b5bfc62)
+
+Files are always appended to the csv file, and the file is named after the year-part of the "createdon" timestamp.
+Note: Synapse Link can sometimes subdivide the partitons into smaller files when required. This means records belonging to the partition 2024 can be written to the data lake as:
+- Timestamp-folder/mytable/2024.csv
+- Timestamp-folder/mytable/2024_001.csv
+- Timestamp-folder/mytable/2024_002csv
+- Etc.
 <br>
