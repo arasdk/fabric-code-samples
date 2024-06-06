@@ -158,6 +158,8 @@ Columns of note here:
 - **SinkModifiedOn**: the datetime when the record was most recently appended to the data lake
 - **sysrowversion**: The SQL row version change tracking version at the time the record was appended. This can be used to compare with the destination record row version during merges, to determine whether to apply the change.
 - **IsDelete**: Is set to 1 for deleted records. For Created or updated records the value is NULL. Note: sysrowversion is not updated for deleted records. In fact, most of the columns will be exported to the data lake with NULL value for records that are deleted. Notable exceptions are: Id, SinkCreatedOn, SinkModifiedOn, IsDelete.
+- **sysdatastatecode**: This column is likely releated to the archiving feature of D365FO, with the value of 1 indicating that the record has been archived.
+- **createdon**: This column serves as the basis for calculating the partition id of the record. 
 <br> 
 **Note:** SinkCreatedOn and SinkModifiedOn are tied to the specific Synapse Link profile, and will not correlate to other Synapse Link profiles where the table might be included.
 
