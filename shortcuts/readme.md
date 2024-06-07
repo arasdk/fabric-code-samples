@@ -86,7 +86,7 @@ The script performs the following steps:
 
 ## Limitations
 
-- The script assumes that the user has the necessary permissions to create shortcuts for the specified Fabric OneLake locations.
+- The script uses the default credentials of the user or service account executing the notebook. It is assumed that the user or service account has the necessary permissions to create shortcuts for the specified Fabric OneLake locations.
 - The script does not handle errors that may occur during the creation of shortcuts. It simply prints the error message and continues.
 - The script does not handle cases where the destination path already exists. It will skip creating a shortcut in such cases.
 - The scipt uses the [sempy](https://learn.microsoft.com/en-us/python/api/semantic-link-sempy/sempy.fabric?view=semantic-link-python) FabricRestClient which is still in it's early stages of development. So behavior may change. 
