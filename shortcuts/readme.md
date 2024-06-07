@@ -95,4 +95,4 @@ The script performs the following steps:
 
 ## License
 
-This script is licensed under the [MIT License](LICENSE).
+This script is licensed under the [MIT License](../LICENSE).
