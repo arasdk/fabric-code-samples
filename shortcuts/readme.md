@@ -1,6 +1,6 @@
 # Fabric Shortcut Creator
 
-This script allows you to automate the process of creating OneLake shortcuts in Microsoft Fabric using the [Fabric REST API](https://learn.microsoft.com/en-us/rest/api/fabric/core/onelake-shortcuts). It is suited for bulk-creation of table shortcuts between Fabric workspaces as an alternative for manually creating them using the shortcut Wizard in Fabric.
+This Python script allows you to automate the process of creating OneLake shortcuts in Microsoft Fabric using the [Fabric REST API](https://learn.microsoft.com/en-us/rest/api/fabric/core/onelake-shortcuts). It is suited for bulk-creation of table shortcuts between Fabric workspaces as an alternative for manually creating them using the shortcut Wizard in Fabric.
 
 ## About Shortcuts
 [Shortcuts](https://learn.microsoft.com/en-us/fabric/onelake/onelake-shortcuts) are a way to reference tables or files/folders in Fabric without physically copying or moving them between Workspaces. Shortcuts in Microsoft Fabric fundementally works at the OneLake protocol level. The script takes advantage of this fact by leveraging Fabric [mssparkutils](https://learn.microsoft.com/en-us/fabric/data-engineering/microsoft-spark-utilities) to search for delta tables at source URI and compare with and check for existing shortcuts at the destination URI.
@@ -21,13 +21,14 @@ All URI's should be provided using the following form:
 
 
 ## Getting Started
+Until Fabric supports running Python scripts outside of spark clusters, The quickest way to run the script is to create a Fabric notebook and run it using a Spark environment.
 
 1. Create a notebook in Microsoft Fabric
 2. Create a cell to hold the notebook parameters (SOURCE_URI, DEST_URI and PATTERN_MATCH)
 3. In the lower right hand corner of the cell, mark the cell as a parameter cell. This will allow you to parse in the parameters to the notebook when executing it from another notebook or a data pipeline.
 4. copy-paste the remaining source code into a cell created just below the parameter cell
 5. Save the notebook with an appropriate name
-6. Execurte the notebook either directly or from another notebook/pipeline.
+6. Execute the notebook either directly or from another notebook/pipeline.
 
 <br>
 
@@ -83,7 +84,7 @@ The script performs the following steps:
 
 ## Limitations
 
-- The script assumes that the user has the necessary permissions to create shortcuts for the specified Fabric workspaces and lakehouses/warehouses.
+- The script assumes that the user has the necessary permissions to create shortcuts for the specified Fabric OneLake locations.
 - The script does not handle errors that may occur during the creation of shortcuts. It simply prints the error message and continues.
 - The script does not handle cases where the destination path already exists. It will skip creating a shortcut in such cases.
 - The scipt uses the [sempy](https://learn.microsoft.com/en-us/python/api/semantic-link-sempy/sempy.fabric?view=semantic-link-python) FabricRestClient which is still in it's early stages of development. So behavior may change. 
