@@ -184,4 +184,4 @@ Note: Synapse Link can sometimes subdivide the partitons into smaller files when
 
 ## License
 
-This script is licensed under the [MIT License](LICENSE).
+This script is licensed under the [MIT License](../LICENSE).
