@@ -4,6 +4,11 @@ This Python script allows you to automate the process of creating OneLake shortc
 
 <br>
 
+![Fabric_shortcut_Creator drawio](https://github.com/arasdk/fabric-code-samples/assets/145650154/5da35e65-d82a-4e93-b9a3-840d2cbaceb3)
+
+
+<br>
+
 ## About Shortcuts
 [Shortcuts](https://learn.microsoft.com/en-us/fabric/onelake/onelake-shortcuts) are a way to reference tables or files/folders in Fabric without physically copying or moving them between Workspaces. Shortcuts in Microsoft Fabric fundementally works at the OneLake protocol level. The script takes advantage of this fact by leveraging Fabric [mssparkutils](https://learn.microsoft.com/en-us/fabric/data-engineering/microsoft-spark-utilities) to search for delta tables at source URI and compare with (and check for) existing shortcuts at the destination URI.
 
