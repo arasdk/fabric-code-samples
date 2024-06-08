@@ -42,6 +42,7 @@ Until Fabric supports running Python scripts outside of spark clusters, The quic
 ## Usage Scenarios
 The following table presents some usage scenarios with different parameter settings.
 The notebook supports a few different scenarios for creating shortcuts for both 'Files' and 'Tables', but is mostly aimed at bulk-operations for 'Tables'.
+It can create shortcuts from both Lakehouses and Warehouses (with schema designation).
 
 <br>
 
@@ -49,6 +50,7 @@ The notebook supports a few different scenarios for creating shortcuts for both 
 |-------------------------------------------------------------|-------------------------------------------------------------|------------------------|---------------------------------------------------------------------------------------------------|
 | `abfss://workspace1@onelake.dfs.fabric.microsoft.com/lakehouse1/Files/my-folder` | `abfss://workspace2@onelake.dfs.fabric.microsoft.com/lakehouse2/Files` | n/a                | Creates a shortcut in the destination lakehouse: `abfss://workspace2@onelake.dfs.fabric.microsoft.com/lakehouse2/Files/my-folder`             |
 | `abfss://workspace1@onelake.dfs.fabric.microsoft.com/lakehouse1/Tables/custtable` | `abfss://workspace2@onelake.dfs.fabric.microsoft.com/lakehouse2/Tables` | ["*"]                  | Creates a shortcut to custtable in the destination lakehouse: `abfss://workspace2@onelake.dfs.fabric.microsoft.com/lakehouse2/Tables/custtable`            |
+| `abfss://workspace1@onelake.dfs.fabric.microsoft.com/warehouse1/Tables/myschema` | `abfss://workspace2@onelake.dfs.fabric.microsoft.com/lakehouse2/Tables` | ["*"]              	 | Matches all tables under the `myschema` at the source Warehouse and creates shortcuts for them in the destination path.  |
 | `abfss://workspace1@onelake.dfs.fabric.microsoft.com/lakehouse1/Tables` | `abfss://workspace2@onelake.dfs.fabric.microsoft.com/lakehouse2/Tables` | ["cust*"]              	 | Matches all tables at source starting with "cust" and creates shortcuts for them in the destination path.  |
 | `abfss://workspace1@onelake.dfs.fabric.microsoft.com/lakehouse1/Tables` | `abfss://workspace2@onelake.dfs.fabric.microsoft.com/lakehouse2/Tables` | ["*sales*"]            | Matches all tables at source containing "sales" in their names and creates shortcuts in the destination path.|
 | `abfss://workspace1@onelake.dfs.fabric.microsoft.com/lakehouse1/Tables` | `abfss://workspace2@onelake.dfs.fabric.microsoft.com/lakehouse2/Tables` | ["*"]         | Matches all tables at source and creates shortcuts for them in the destination path. |
