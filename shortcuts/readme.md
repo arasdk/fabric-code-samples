@@ -40,7 +40,8 @@ Until Fabric supports running Python scripts outside of spark clusters, The quic
 <br>
 
 **Example of a parameter cell in a Microsoft Fabric notebook**:
-<img width="788" alt="image" src="https://github.com/arasdk/fabric-code-samples/assets/145650154/b34babe0-5b00-4a19-b474-57d7a259db26">
+![image](https://github.com/arasdk/fabric-code-samples/assets/145650154/10ab4080-a433-4f27-9318-e52ad8d4b3bc)
+
 
 <br>
 
