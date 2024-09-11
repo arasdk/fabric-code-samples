@@ -30,7 +30,6 @@ PATTERN_MATCH = ["*"]
 
 import sempy.fabric as fabric
 from sempy.fabric.exceptions import FabricHTTPException
-import json
 import fnmatch
 import re
 import os
@@ -55,7 +54,7 @@ def extract_onelake_https_uri_components(uri):
 
 def is_valid_onelake_uri(uri: str) -> bool:
     workspace_id, item_id, path = extract_onelake_https_uri_components(uri)
-    if not "abfss://" in uri or workspace_id is None or item_id is None or path is None:
+    if "abfss://" not in uri or workspace_id is None or item_id is None or path is None:
         return False
 
     return True
@@ -79,8 +78,18 @@ def get_onelake_shorcut(workspace_id: str, item_id: str, path: str, name: str):
     return result
 
 
-def get_matching_delta_tables_uris(uri: str, patterns: []) -> []:
+def is_folder_matching_pattern(path: str, folder_name: str, patterns: []):
+    if folder_name in patterns:
+        return True
+    else:
+        for pattern in patterns:
+            if fnmatch.fnmatch(folder_name, pattern) and is_delta_table(path):
+                return True
 
+    return False
+
+
+def get_matching_delta_tables_uris(uri: str, patterns: []) -> []:
     # Use a set to avoid duplicates
     matched_uris = set()
     files = mssparkutils.fs.ls(uri)
@@ -90,19 +99,17 @@ def get_matching_delta_tables_uris(uri: str, patterns: []) -> []:
     if patterns is None or len(patterns) == 0:
         patterns = ["*"]
 
-    # Iterate over each pattern and filter files based on their path property
-    for pattern in patterns:
-        matched_uris.update(
-            folder.path
-            for folder in folders
-            if is_delta_table(folder.path) and fnmatch.fnmatch(folder.name, pattern)
-        )
+    # Filter folders to only those that matches the pattern and is a delta table
+    matched_uris.update(
+        folder.path
+        for folder in folders
+        if is_folder_matching_pattern(folder.path, folder.name, patterns)
+    )
 
     return matched_uris
 
 
 def create_onelake_shorcut(source_uri: str, dest_uri: str):
-
     src_workspace_id, src_item_id, src_path = extract_onelake_https_uri_components(
         source_uri
     )
@@ -171,6 +178,7 @@ else:
         for delta_table_uri in get_matching_delta_tables_uris(
             source_uri_addr, PATTERN_MATCH
         ):
+            print(delta_table_uri)
             shortcut = create_onelake_shorcut(delta_table_uri, dest_uri_addr)
             if shortcut is not None:
                 result.append(shortcut)
