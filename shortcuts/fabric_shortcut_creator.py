@@ -83,8 +83,8 @@ def is_folder_matching_pattern(path: str, folder_name: str, patterns: []):
         return True
     else:
         for pattern in patterns:
-            if fnmatch.fnmatch(folder_name, pattern) and is_delta_table(path):
-                return True
+            if fnmatch.fnmatch(folder_name, pattern):
+                return is_delta_table(path)
 
     return False
 
