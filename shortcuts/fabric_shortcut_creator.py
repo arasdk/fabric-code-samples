@@ -177,7 +177,7 @@ else:
         # Iterate over source folders and create table shortcuts @ destination
         for delta_table_uri in get_matching_delta_tables_uris(
             source_uri_addr, PATTERN_MATCH
-        ):            
+        ):
             shortcut = create_onelake_shorcut(delta_table_uri, dest_uri_addr)
             if shortcut is not None:
                 result.append(shortcut)
