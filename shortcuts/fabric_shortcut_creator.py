@@ -95,10 +95,6 @@ def get_matching_delta_tables_uris(uri: str, patterns: []) -> []:
     files = mssparkutils.fs.ls(uri)
     folders = [item for item in files if item.isDir]
 
-    # Add wildcard to pattern to match everything if empty
-    if patterns is None or len(patterns) == 0:
-        patterns = ["*"]
-
     # Filter folders to only those that matches the pattern and is a delta table
     matched_uris.update(
         folder.path
@@ -148,6 +144,8 @@ def create_onelake_shorcut(source_uri: str, dest_uri: str):
 
     return get_onelake_shorcut(dest_workspace_id, dest_item_id, dest_path, name)
 
+if PATTERN_MATCH is None or len(PATTERN_MATCH) == 0:
+     raise TypeError("Argument 'PATTERN_MATCH' should be a valid list of patterns or ["*"] to match everything")
 
 # Collect created shortcuts
 result = []
