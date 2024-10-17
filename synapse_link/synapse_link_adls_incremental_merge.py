@@ -3,11 +3,11 @@
 
 # In[1]:
 
-# NOTE: This notebook requires that the lakehouse containing the shortcut to the ADLS Gen2 Storage Account 
+# NOTE: This notebook requires that the lakehouse containing the shortcut to the ADLS Gen2 Storage Account
 # with the incremental CSV files is added to the notebook and configured (pinned) as the default lakehouse.
 
 # The path to the shortcut that points to the storage account folder where the incremental timestamp folders are located
-# Change this path to the correct path for your environment 
+# Change this path to the correct path for your environment
 synapse_link_shortcut_path = "Files/synapse_link"
 
 # This folder is placed in the default lakehouse and used for logs and watermarks
@@ -44,6 +44,7 @@ from pyspark.sql.functions import (
     row_number,
     desc,
     lit,
+    to_timestamp,
 )
 from pyspark.sql.types import (
     StructType,
@@ -118,6 +119,20 @@ def archive_folder(folder):
     mssparkutils.fs.mv(source_folder, archive_folder, True)
 
 
+def apply_custom_formatting(df):
+    custom_format = "MM/d/yyyy h:mm:ss a"
+    if "SinkCreatedOn" in df.columns:
+        df = df.withColumn(
+            "SinkCreatedOn", to_timestamp(col("SinkCreatedOn"), custom_format)
+        )
+    if "SinkModifiedOn" in df.columns:
+        df = df.withColumn(
+            "SinkModifiedOn", to_timestamp(col("SinkModifiedOn"), custom_format)
+        )
+
+    return df
+
+
 # Returns a StructField object based on the provided field name and data type.
 def get_struct_field(field_name, data_type) -> StructField:
     if data_type == "string":
@@ -129,7 +144,11 @@ def get_struct_field(field_name, data_type) -> StructField:
     elif data_type == "int32":
         return StructField(field_name, IntegerType(), True)
     elif data_type == "dateTime":
-        return StructField(field_name, TimestampType(), True)
+        if field_name in ["SinkCreatedOn", "SinkModifiedOn"]:
+            # Handle custom datetime format for SinkCreatedOn and SinkModifiedOn
+            return StructField(field_name, StringType(), True)
+        else:
+            return StructField(field_name, TimestampType(), True)
     elif data_type == "dateTimeOffset":
         return StructField(field_name, TimestampType(), True)
     elif data_type == "decimal":
@@ -289,11 +308,13 @@ def merge_incremental_csv_file(table_name, folder, partition_name, schema):
         df_with_row_number.merge_row_number == 1
     ).drop("merge_row_number")
 
+    final_df = apply_custom_formatting(latest_records_df)
+
     # Does the table exist? If not create it from our df.
     # If it exists, proceed with merge instead
     if not DeltaTable.isDeltaTable(spark, fabric_table_path):
         # Create:
-        latest_records_df.write.mode("overwrite").format("delta").saveAsTable(
+        final_df.write.mode("overwrite").format("delta").saveAsTable(
             f"{fabric_table_name}"
         )
         logging.info(f"Created table {fabric_table_name}")
@@ -306,7 +327,7 @@ def merge_incremental_csv_file(table_name, folder, partition_name, schema):
         # Only update records from sources that has a newer sysrowversion (thus skipping over previously processed records)
         # Important note: sysrowversion is not provided for deleted records, so deleted records should always update when matched.
         destination_table.alias("destination").merge(
-            latest_records_df.alias("source"), "source.id = destination.id"
+            final_df.alias("source"), "source.id = destination.id"
         ).whenMatchedUpdateAll(
             condition="source.IsDelete = 1 OR source.sysrowversion > destination.sysrowversion"
         ).whenNotMatchedInsertAll().execute()
