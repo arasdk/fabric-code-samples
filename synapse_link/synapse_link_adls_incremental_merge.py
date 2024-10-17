@@ -3,17 +3,28 @@
 
 # In[1]:
 
+# NOTE: This notebook requires that the lakehouse containing the shortcut to the ADLS Gen2 Storage Account 
+# with the incremental CSV files is added to the notebook and configured (pinned) as the default lakehouse.
 
-# The name of the lakehouse in the current workspace where synapse link incremental feed is available as a shortcut
-lakehouse_name = "<enter-lakehouse-name>"
+# The path to the shortcut that points to the storage account folder where the incremental timestamp folders are located
+# Change this path to the correct path for your environment 
+synapse_link_shortcut_path = "Files/synapse_link"
 
 # This folder is placed in the default lakehouse and used for logs and watermarks
-incremental_merge_folder = "Files/synapse_link/incremental_merge_state"
+merge_state_path = "Files/incremental_merge_state"
 
-# The path to the shortcut that points to the storage account folder where the incremental csv files are located
-synapse_link_shortcut_path = "Files/synapse_link/<enter-shortcut-name>"
+# Specify the number of processed timestamp folders to keep before moving them to the archive folder
+# If the number of timestamp folders are large, archiving may reduce the time it takes to list folder content
+# Set to 0 to ignore archiving
+# NOTE: Archiving requires storage blob data contributor role on the ADLS Gen2 Storage Account
+max_timestamps_before_archive = 0
+timestamp_archive_path = f"{synapse_link_shortcut_path}/archive"
+
+# Define the schema to use for incremental tables. Set to "" for lakehouses with no schema support
+table_schema = "dbo"
 
 # Define the batch size to control how many table merges are parallelized
+# Set to 1 (= parallel merges) when using small Fabric capacities or to reduce capacity usage spikes
 batch_size = 4
 
 
@@ -24,6 +35,7 @@ import concurrent.futures
 import json
 import logging
 import time
+import re
 from notebookutils import mssparkutils
 from datetime import datetime
 from delta.tables import DeltaTable
@@ -55,30 +67,15 @@ spark.conf.set("spark.databricks.delta.schema.autoMerge.enabled", True)
 # https://learn.microsoft.com/en-us/fabric/data-engineering/autotune?tabs=pyspark
 spark.conf.set("spark.ms.autotune.enabled", "true")
 
-# Resolve lakehouse and workspace id using mssparkutils
-LAKEHOUSE_ID = mssparkutils.lakehouse.get(lakehouse_name).id
-WORKSPACE_ID = mssparkutils.lakehouse.get(lakehouse_name).workspaceId
+# Create lakehouse schema if it doesn't exist
+if table_schema:
+    spark.sql(f"CREATE SCHEMA IF NOT EXISTS {table_schema}")
 
-# changelog.info contains the active folder name
-# Synapse.log contains a comma-separated list of previously processed folders ordered by date
-CHANGELOG_URL = f"abfss://{WORKSPACE_ID}@onelake.dfs.fabric.microsoft.com/{LAKEHOUSE_ID}/{synapse_link_shortcut_path}/Changelog/changelog.info"
-SYNAPSELOG_URL = f"abfss://{WORKSPACE_ID}@onelake.dfs.fabric.microsoft.com/{LAKEHOUSE_ID}/{synapse_link_shortcut_path}/Changelog/Synapse.log"
-
-# This points to the fully qualified name of a given change folder
-FOLDER_URL_TEMPLATE = "abfss://{0}@onelake.dfs.fabric.microsoft.com/{1}/{2}/{3}"
-
-# This points to the folder that contains table specific csv files for a given change folder
-TABLE_URL_TEMPLATE = "abfss://{0}@onelake.dfs.fabric.microsoft.com/{1}/{2}/{3}"
-
-# Use mssparkutils to get the list of all processed folders.
-# This saves having to perform a list operation on the storage account.
-# Note: SYNAPSELOG folders are sorted by date, so the newest folder is last in the list
-PREV_FOLDERS = mssparkutils.fs.head(SYNAPSELOG_URL, 1024 * 10000).split(",")
 
 # Set up logging
 # Loggs will be appended to files YYYYMMDD.log files
 date_str = time.strftime("%Y%m%d")
-log_path = f"{incremental_merge_folder}/Logs"
+log_path = f"{merge_state_path}/Logs"
 file_name = f"{date_str}.log"
 mssparkutils.fs.mkdirs(log_path)
 
@@ -105,17 +102,20 @@ logging.getLogger().addHandler(console_handler)
 
 
 def save_last_processed_folder(folder):
-    mssparkutils.fs.put(
-        f"{incremental_merge_folder}/.last_processed_folder", folder, True
-    )
+    mssparkutils.fs.put(f"{merge_state_path}/.last_processed_folder", folder, True)
 
 
 def get_last_processed_folder() -> str:
-    if mssparkutils.fs.exists(f"{incremental_merge_folder}/.last_processed_folder"):
-        return mssparkutils.fs.head(
-            f"{incremental_merge_folder}/.last_processed_folder", 1024
-        )
+    if mssparkutils.fs.exists(f"{merge_state_path}/.last_processed_folder"):
+        return mssparkutils.fs.head(f"{merge_state_path}/.last_processed_folder", 1024)
     return None
+
+
+def archive_folder(folder):
+    source_folder = f"{synapse_link_shortcut_path}/{folder}"
+    archive_folder = f"{timestamp_archive_path}/{folder}"
+    logging.info(f"Archiving {source_folder} to '{archive_folder}'")
+    mssparkutils.fs.mv(source_folder, archive_folder, True)
 
 
 # Returns a StructField object based on the provided field name and data type.
@@ -146,10 +146,9 @@ def get_struct_field(field_name, data_type) -> StructField:
 # Returns adictionary representing the table schema and partitions, where the keys are table names and the values are
 # the corresponding table schema/partitions.
 def get_table_schema_dict(folder) -> {}:
-    # Load the folder-specific  model.json using the OS-level default lakehouse file mount
-    schema_file = f"/lakehouse/default/{synapse_link_shortcut_path}/{folder}/model.json"
-    with open(schema_file, "r", encoding="utf-8") as f:
-        schema = json.load(f)
+    # Load the folder-specific  model.json
+    schema_file = f"{synapse_link_shortcut_path}/{folder}/model.json"
+    schema = json.loads(mssparkutils.fs.head(schema_file, 1024 * 10000))
 
     # Build the schema dict
     table_schema_dict = {}
@@ -195,17 +194,45 @@ def get_folders():
     folders = []
     last_processed_folder = get_last_processed_folder()
 
-    # Loop through the PREV_FOLDERS in reverse, so we process the last folders first
-    # Add folder if it has not previously been merged
-    # The date format of the timestamp folders are lexicographically sortable, so we can
-    # just compare our persisted folder name with the folder list to and add folders that are newer.
-    for folder in reversed(PREV_FOLDERS):
-        if last_processed_folder is None or folder > last_processed_folder:
-            folders.append(folder)
+    # Regular expression pattern to match the timestamp format
+    # ISO 8601 date and time representation
+    timestamp_pattern = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}\.\d{2}\.\d{2}Z$")
 
-    # Reverse the order of the result, so that folders are ordered chronologically
-    folders.reverse()
+    files = mssparkutils.fs.ls(synapse_link_shortcut_path)
 
+    # Extract folders with timestamp names
+    timestamp_folders = [
+        file.name for file in files if timestamp_pattern.match(file.name)
+    ]
+
+    # Sort the list in ascending order
+    # ISO 8601 format, such as YYYY-MM-DDTHH:MM:SSZ, is lexicographically sortable
+    timestamp_folders_sorted = sorted(timestamp_folders)
+
+    # Skip the last folder since that is the current (active one)
+    folders_to_process = timestamp_folders_sorted[:-1]
+
+    # Loop through the timestamp folders and add folder if it has not previously been merged
+    # Check if the folder contains model.json and if model.json > 0B
+    for timestamp_folder in folders_to_process:
+        if last_processed_folder is None or timestamp_folder > last_processed_folder:
+
+            schema_file = f"{synapse_link_shortcut_path}/{timestamp_folder}/model.json"
+            if mssparkutils.fs.exists(schema_file) and mssparkutils.fs.head(
+                schema_file, 100
+            ):
+                folders.append(timestamp_folder)
+
+        elif max_timestamps_before_archive > 0:
+            # Check if timestmap folder should be archived
+            remaining_folders = folders_to_process[
+                folders_to_process.index(timestamp_folder) + 1 :
+            ]
+            if len(remaining_folders) >= max_timestamps_before_archive:
+                # Move the processed folder to an archive location
+                archive_folder(timestamp_folder)
+
+    # Return the folders list without the last (currently active) folder
     return folders
 
 
@@ -223,12 +250,13 @@ def merge_incremental_table(table_name, folder, schema_and_partitions_dict):
 
 
 def merge_incremental_csv_file(table_name, folder, partition_name, schema):
-    fabric_table_path = f"Tables/{table_name}_incremental"
-    partition_file = f"{folder}/{table_name}/{partition_name}.csv"
-
-    table_partition_file = TABLE_URL_TEMPLATE.format(
-        WORKSPACE_ID, LAKEHOUSE_ID, synapse_link_shortcut_path, partition_file
+    # Conditionally include table_schema if it is not None or an empty string
+    fabric_table_path = (
+        f"Tables/{table_schema + '/' if table_schema else ''}{table_name}"
     )
+    fabric_table_name = f"{table_schema + '.' if table_schema else ''}{table_name}"
+    partition_file = f"{folder}/{table_name}/{partition_name}.csv"
+    table_partition_file = f"{synapse_link_shortcut_path}/{partition_file}"
 
     logging.info(f"Loading csv data from {partition_file}..")
 
@@ -266,13 +294,13 @@ def merge_incremental_csv_file(table_name, folder, partition_name, schema):
     if not DeltaTable.isDeltaTable(spark, fabric_table_path):
         # Create:
         latest_records_df.write.mode("overwrite").format("delta").saveAsTable(
-            f"{table_name}_incremental"
+            f"{fabric_table_name}"
         )
-        logging.info(f"Created table {fabric_table_path}")
+        logging.info(f"Created table {fabric_table_name}")
     else:
         # Merge:
 
-        logging.info(f"Merging {partition_file} to '{fabric_table_path}'")
+        logging.info(f"Merging {partition_file} to '{fabric_table_name}'")
         destination_table = DeltaTable.forPath(spark, fabric_table_path)
 
         # Only update records from sources that has a newer sysrowversion (thus skipping over previously processed records)
@@ -321,5 +349,6 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=batch_size) as executor:
         # All tables merged for the folder
         # Update last_processed_folder watermark
         save_last_processed_folder(folder)
+
 
 logging.info("Merge complete")
