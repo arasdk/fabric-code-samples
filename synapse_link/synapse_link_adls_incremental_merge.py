@@ -24,7 +24,7 @@ timestamp_archive_path = f"{synapse_link_shortcut_path}/archive"
 table_schema = "dbo"
 
 # Define the batch size to control how many table merges are parallelized
-# Set to 1 (= parallel merges) when using small Fabric capacities or to reduce capacity usage spikes
+# Set to 1 (sequential merging) when using a small Fabric capacity or to reduce capacity utilization
 batch_size = 4
 
 
