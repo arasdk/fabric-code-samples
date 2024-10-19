@@ -166,8 +166,9 @@ def get_struct_field(field_name, data_type) -> StructField:
 # the corresponding table schema/partitions.
 def get_table_schema_dict(folder) -> {}:
     # Load the folder-specific  model.json
-    schema_file = f"{synapse_link_shortcut_path}/{folder}/model.json"
-    schema = json.loads(mssparkutils.fs.head(schema_file, 1024 * 10000))
+    schema_file = f"/lakehouse/default/{synapse_link_shortcut_path}/{folder}/model.json"
+    with open(schema_file, "r", encoding="utf-8") as f:
+        schema = json.load(f)
 
     # Build the schema dict
     table_schema_dict = {}
