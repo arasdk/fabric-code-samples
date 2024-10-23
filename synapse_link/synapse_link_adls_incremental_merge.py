@@ -61,6 +61,7 @@ from pyspark.sql.window import Window
 
 # Merge can lead to "ancient" timestamp errors unless int96RebaseModeInWrite is set to CORRECTED
 spark.conf.set("spark.sql.parquet.int96RebaseModeInWrite", "CORRECTED")
+spark.conf.set("spark.sql.parquet.datetimeRebaseModeInWrite", "CORRECTED")
 
 # Schema evolution when merging
 spark.conf.set("spark.databricks.delta.schema.autoMerge.enabled", True)
